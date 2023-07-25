@@ -34,6 +34,3 @@ class FakeTaskRepository(AbstractTaskRepository):
 
     async def list_expired(self) -> list[Task]:
         return [task for task in self.db if task.is_expired()]
-
-    async def commit(self) -> None:
-        """noop"""

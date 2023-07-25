@@ -2,6 +2,12 @@ import asyncio
 
 from task_queue_service.container import bootstrap
 
+# XXX: There're better ways to implement workers using external services
+# like celery with schedulers
+# (and for sure that will be the case if the service will be in prod)
+# But I just want to keep it simple and do not
+# add additional dependencies to the project
+
 
 async def main() -> None:
     container = bootstrap()

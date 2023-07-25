@@ -26,9 +26,3 @@ class AbstractTaskRepository(Protocol):
 
     async def list_expired(self) -> list[Task]:
         """Get list of expired tasks."""
-
-    async def commit(self) -> None:
-        """Persist changes."""
-        # It's better to move logic into UoW in case application will grow
-        # But currently we only have one domain object
-        # so it's quite easy to control sessions through the only repository.

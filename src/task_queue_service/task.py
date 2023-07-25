@@ -22,7 +22,7 @@ class Task:
         if not self.is_expired():
             raise Exception("Cannot be marked as done")
 
-        self.task_status = TaskStatus.DONE
+        self.status = TaskStatus.DONE
 
     def is_expired(self) -> bool:
         return datetime.now() > self.waiting_time

@@ -3,7 +3,7 @@ from typing import Any, Protocol, Self
 from task_queue_service.repositories.interface import AbstractTaskRepository
 
 
-class UnitOfWork(Protocol):
+class AbstractUnitOfWork(Protocol):
     is_committed: bool
     task_repository: AbstractTaskRepository
 

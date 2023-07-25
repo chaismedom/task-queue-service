@@ -2,9 +2,10 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from task_queue_service.repositories import AbstractTaskRepository, FakeTaskRepository
+from task_queue_service.repositories import FakeTaskRepository
 from task_queue_service.services.task_queue import TaskQueueService
 from task_queue_service.task import Task
+from task_queue_service.uow import AbstractUnitOfWork, FakeUnitOfWork
 
 
 class TestTaskQueueService:
@@ -18,18 +19,24 @@ class TestTaskQueueService:
         ]
 
     @pytest.fixture
-    def task_repository(self, tasks: list[Task]) -> AbstractTaskRepository:
+    def task_repository(self, tasks: list[Task]) -> FakeTaskRepository:
         return FakeTaskRepository(tasks)
 
     @pytest.fixture
-    def task_queue(self, task_repository: AbstractTaskRepository) -> TaskQueueService:
-        return TaskQueueService(
-            task_repository=task_repository,
-        )
+    def uow(self, task_repository: FakeTaskRepository) -> AbstractUnitOfWork:
+        return FakeUnitOfWork(task_repository=task_repository)
+
+    @pytest.fixture
+    def task_queue(self, uow: AbstractUnitOfWork) -> TaskQueueService:
+        return TaskQueueService(uow=uow)
 
     async def test_queue_poll_success(
-        self, task_queue: TaskQueueService, task_repository: AbstractTaskRepository
+        self,
+        task_queue: TaskQueueService,
+        uow: AbstractUnitOfWork,
     ) -> None:
         await task_queue.poll()
-        expired_tasks = await task_repository.list_expired()
+        async with uow:
+            expired_tasks = await uow.task_repository.list_expired()
+
         assert {task.title for task in expired_tasks} == {"expired1", "expired2"}

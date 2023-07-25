@@ -1,5 +1,13 @@
 version: '3.9'
 
+x-environment: &environment
+  PG_DSN: "postgresql+asyncpg://postgres:test@db:5432/data_ingestion"
+  POSTGRES_DB: "task_queue"
+  POSTGRES_HOST: "db"
+  POSTGRES_PASSWORD: "test"
+  POSTGRES_PORT: "5432"
+  POSTGRES_USER: "postgres"
+
 x-build: &build
   context: .
   dockerfile: Dockerfile
@@ -7,18 +15,35 @@ x-build: &build
 x-base: &base
   image: ${IMAGE_NAME:-task-queue-service}
   build: *build
+  environment: *environment
   volumes:
     - .:/usr/src/app
 
 services:
+  db:
+    container_name: 'task-queue_db'
+    image: 'postgres:14.5-alpine'
+    ports:
+      - "5444:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    environment: *environment
+
   app:
     <<: *base
     ports:
       - "8010:8010"
     entrypoint: ["docker/start.sh"]
+    depends_on:
+      - db
     restart: on-failure
 
   worker:
     <<: *base
     entrypoint: ["docker/worker.sh"]
+    depends_on:
+      - db
     restart: on-failure
+
+volumes:
+  pg_data:

@@ -2,11 +2,12 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from task_queue_service.repositories import AbstractTaskRepository, FakeTaskRepository
+from task_queue_service.repositories import FakeTaskRepository
 from task_queue_service.services.task_timer import (
     AbstractTaskTimerService,
     FakeTaskTimerService,
 )
+from task_queue_service.uow import AbstractUnitOfWork, FakeUnitOfWork
 from task_queue_service.use_cases import AddTaskUseCaseImpl
 
 
@@ -20,17 +21,21 @@ class TestAddTaskUseCase:
         return FakeTaskTimerService(waiting_time)
 
     @pytest.fixture
-    def task_repository(self) -> AbstractTaskRepository:
+    def task_repository(self) -> FakeTaskRepository:
         return FakeTaskRepository()
+
+    @pytest.fixture
+    def uow(self, task_repository: FakeTaskRepository) -> AbstractUnitOfWork:
+        return FakeUnitOfWork(task_repository=task_repository)
 
     @pytest.fixture
     def use_case(
         self,
-        task_repository: AbstractTaskRepository,
+        uow: AbstractUnitOfWork,
         task_timer: AbstractTaskTimerService,
     ) -> AddTaskUseCaseImpl:
         return AddTaskUseCaseImpl(
-            task_repository=task_repository,
+            uow=uow,
             task_timer=task_timer,
         )
 
@@ -38,12 +43,12 @@ class TestAddTaskUseCase:
         self,
         waiting_time: datetime,
         use_case: AddTaskUseCaseImpl,
-        task_repository: AbstractTaskRepository,
+        uow: AbstractUnitOfWork,
     ) -> None:
         title = "test-title"
 
         task_id = await use_case(title)
-
-        task = await task_repository.get_by_id(task_id)
+        async with uow:
+            task = await uow.task_repository.get_by_id(task_id)
         assert task.title == title
         assert task.waiting_time == waiting_time

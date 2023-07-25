@@ -2,8 +2,9 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from task_queue_service.repositories import AbstractTaskRepository, FakeTaskRepository
+from task_queue_service.repositories import FakeTaskRepository
 from task_queue_service.task import Task, TaskStatus
+from task_queue_service.uow import AbstractUnitOfWork, FakeUnitOfWork
 from task_queue_service.use_cases import GetTaskStatusUseCaseImpl
 
 
@@ -38,19 +39,21 @@ class TestAddTaskUseCase:
         waiting_task: Task,
         expired_task: Task,
         expired_but_not_polled_task: Task,
-    ) -> AbstractTaskRepository:
+    ) -> FakeTaskRepository:
         return FakeTaskRepository(
             [waiting_task, expired_task, expired_but_not_polled_task]
         )
 
     @pytest.fixture
+    def uow(self, task_repository: FakeTaskRepository) -> AbstractUnitOfWork:
+        return FakeUnitOfWork(task_repository=task_repository)
+
+    @pytest.fixture
     def use_case(
         self,
-        task_repository: AbstractTaskRepository,
+        uow: AbstractUnitOfWork,
     ) -> GetTaskStatusUseCaseImpl:
-        return GetTaskStatusUseCaseImpl(
-            task_repository=task_repository,
-        )
+        return GetTaskStatusUseCaseImpl(uow=uow)
 
     async def test_use_case_waiting_task_success(
         self,
