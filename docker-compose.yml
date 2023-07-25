@@ -1,0 +1,24 @@
+version: '3.9'
+
+x-build: &build
+  context: .
+  dockerfile: Dockerfile
+
+x-base: &base
+  image: ${IMAGE_NAME:-task-queue-service}
+  build: *build
+  volumes:
+    - .:/usr/src/app
+
+services:
+  app:
+    <<: *base
+    ports:
+      - "8010:8010"
+    entrypoint: ["docker/start.sh"]
+    restart: on-failure
+
+  worker:
+    <<: *base
+    entrypoint: ["docker/worker.sh"]
+    restart: on-failure
