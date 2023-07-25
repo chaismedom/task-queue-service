@@ -1,0 +1,25 @@
+1) First of all, there's a problem of domain inconsistency when a task has expired but a worker is in the poll timeout.
+As far as I understand, this is expected behavior and could be skipped.
+This may be monkey-fixable (checking task status each time GetTaskInfoUseCase called)
+but it leads to a bad design that I don't want to add.
+Anyway, eventually consistency is expected, so all the domain discrepancies will be resolved some time.
+
+2) The word `queue` is uncertain and might have its own weird meaning; this could lead to overkill for the small service;
+So from my approach, I understand a `queue` as something that can be polled; in the process of polling, all the expired tasks are marked as done.
+
+Other meanings that I consider:
+- Queue could be a real FIFO queue with task/event processing that has .pop()/.add() interface;
+This could be made as PriorityQueue from the `queue` module or even based on external services.
+But all of this is too big for the service that implements two http endpoints; It may be necessary depending on how the service evolves.
+- Queue could be a temporary "storage" for the tasks. The main benefit is that we could have different queues with their own identifiers.
+(So we could take them as a real domain model/aggregate);
+This is useful unless we need it in the future :)
+
+3) There are also different approaches that I have considered before development:
+- There could be no "background" work at all: task status can be calculated based on .waiting_time attribute;
+It resolves the problem of domain inconsistency described below and makes code structure far easier.
+- Tasks may be like real structures with their own callbacks that are called asyncronously.
+(like how celery works).
+So the "fake" task could just mark itself, then the Task.waiting_time is reached;
+This approach is actually more likely to be realistic.
+Instead of just storing the task information, we could provide the possibility of communicating with the task from both sides.
